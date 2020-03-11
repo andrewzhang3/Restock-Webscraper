@@ -18,17 +18,20 @@ Go to terminal and enter: crontab -e
 Depending on which editor is your default, (you may need to configure it), enter the time that you want the program to run and the command to execute your code.
 Below is a guide on how to set the time.
 
-# ┌───────────── minute (0 - 59)
-# │ ┌───────────── hour (0 - 23)
-# │ │ ┌───────────── day of month (1 - 31)
-# │ │ │ ┌───────────── month (1 - 12)
-# │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday;
-# │ │ │ │ │                                       7 is also Sunday on some systems)
-# │ │ │ │ │
-# │ │ │ │ │
-# * * * * *  command_to_execute
+Follows the format: * * * * *  command_to_execute
+
+First asterix is minute (0 - 59).
+
+Second asterix is hour (0 - 23).
+
+Third asterix is day of month (1 - 31).
+
+Fourth asterix is month (1 - 12).
+
+Fifth asterix is day of week (0 - 6) (Sunday to Saturday; 7 is also Sunday on some systems)
 
 For example in your editor after typing crontab -e:
 0 12,16,20 * * * /usr/local/bin/python3 ~/Desktop/scrape.py
+runs the program at 12:00, 16:00 and 20:00 everyday of every month every day of the week.
 
 That's all you need! The program will only email you if the stock is available, but not if it is still unavailable. That way you won't be spammed everyday!
