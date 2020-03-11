@@ -5,11 +5,20 @@ import traceback
 import random
 import smtplib
 import re
+import json
+from pprint import pprint
 
 import datetime
 from bs4 import BeautifulSoup
 from time import sleep
 from lxml.html import fromstring
+
+# Access Env Variables
+with open('env.json') as env:
+    data = json.load(env)
+
+# List of user agents to use.
+user_agent_list = data["userAgents"]
 
 
 def get_proxies():
@@ -32,43 +41,12 @@ def get_proxies():
     return proxies
 
 
-# List of user agents to use.
-user_agent_list = [
-    # Chrome
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 5.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
-    # Firefox
-    'Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)',
-    'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
-    'Mozilla/5.0 (Windows NT 6.1; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (Windows NT 6.2; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.0; Trident/5.0)',
-    'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)',
-    'Mozilla/5.0 (Windows NT 6.1; Win64; x64; Trident/7.0; rv:11.0) like Gecko',
-    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)',
-    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)',
-    'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'
-]
-
-
 def new_estimated_date(url):
     # If there is a product that shows when the estimated date the product will be in stock again, then
     # get that date and record it. Email the date.
 
     # Open file and configure dates
-    f = open(
-        "/Users/andrewzhang/Desktop/Andrew/Self_Code/eCommerce-Restock-Scraper/arrival.txt", 'r')
+    f = open("arrival.txt", 'r')
     today = datetime.date.today()
     fileContent = f.read()
     f.close()
@@ -111,8 +89,7 @@ def new_estimated_date(url):
             print(not not match.group(1))
 
             # Check for new estimated time of arrival of product.
-            f = open(
-                "/Users/andrewzhang/Desktop/Andrew/Self_Code/eCommerce-Restock-Scraper/arrival.txt", 'w')
+            f = open("arrival.txt", 'w')
             if match.group(1):
                 print("Estimated Date Updated!")
                 msg = 'Subject: Estimated Date Updated!\n\n Take a look!'
@@ -145,8 +122,7 @@ def website_parser(url, proxyDict, headers):
         print(check_out[0].text.strip() == "Sold Out")
         # Check if the product is available.
         if check_out:
-            f = open(
-                "/Users/andrewzhang/Desktop/Andrew/Self_Code/eCommerce-Restock-Scraper/data.txt", 'w')
+            f = open("data.txt", 'w')
 
             # If it says "Add to Cart" then send email to notify and update file.
             if check_out[0].text.strip() == "Add to cart":
@@ -175,9 +151,9 @@ def send_email(msg):
     smtpObj.starttls()
     smtpObj.ehlo()
     # ------------------------------------------ Fill in email details ------------------------------------------ #
-    smtpObj.login('Your Email', 'Password')
-    smtpObj.sendmail('Sender',
-                     'Recipient', msg)
+    smtpObj.login(data["emailUser"], data["emailPass"])
+    smtpObj.sendmail(data["emailUser"],
+                     data["emailUser"], msg)
     # ----------------------------------------------------------------------------------------------------------- #
     smtpObj.quit()
 
@@ -186,13 +162,12 @@ def execute_scrape():
     # Main function to scrape.
 
     # ------------------------------------- Change this depending on website ------------------------------------- #
-    url = "https://hydroflask.com.au/collections/accessories/products/straw-lid"
+    url = data["websiteToScrape"]
     # ------------------------------------------------------------------------------------------------------------ #
     print("Processing link: " + url)
 
     # Open file and configure dates
-    f = open(
-        "/Users/andrewzhang/Desktop/Andrew/Self_Code/eCommerce-Restock-Scraper/data.txt", 'r')
+    f = open("data.txt", 'r')
     today = datetime.date.today()
     fileContent = f.read()
     f.close()
